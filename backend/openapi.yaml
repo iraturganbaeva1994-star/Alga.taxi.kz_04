@@ -1,0 +1,884 @@
+openapi: 3.0.0
+info:
+  title: Alga Taxi API (scaffold)
+  version: 0.1.0
+servers:
+  - url: http://localhost:3000
+    description: Local dev
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    AuthRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+      required: [phone]
+    AuthVerify:
+      type: object
+      properties:
+        phone:
+          type: string
+        code:
+          type: string
+      required: [phone, code]
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        phone:
+          type: string
+        role:
+          type: string
+        lang_pref:
+          type: string
+    Driver:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        status:
+          type: string
+        last_location:
+          type: object
+          properties:
+            lat:
+              type: number
+            lon:
+              type: number
+    OrderPoint:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [pickup, dropoff]
+        address:
+        AppSettings:
+          type: object
+          properties:
+            show_phone_numbers:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+            contact_number:
+              type: string
+            logo_url:
+              type: string
+          type: string
+        lat:
+          type: number
+        lon:
+          type: number
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        client_id:
+          type: string
+        driver_id:
+          type: string
+        status:
+          type: string
+        service_type:
+          type: string
+        price_cents:
+          type: integer
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderPoint'
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        order_id:
+          type: string
+        from_user:
+          $ref: '#/components/schemas/User'
+        to_user:
+          $ref: '#/components/schemas/User'
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    NotificationBroadcast:
+      type: object
+      properties:
+        target:
+          type: string
+          enum: [drivers, clients, all]
+        message:
+          type: string
+        via:
+          type: array
+          items:
+            type: string
+            enum: [push, sms]
+    ReportResponse:
+      type: object
+      properties:
+        driver_id:
+          type: string
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        orders_count:
+          type: integer
+        earnings_cents:
+          type: integer
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/request-code:
+    post:
+      summary: Request SMS code
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId:
+                    type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/verify:
+    post:
+      summary: Verify SMS code and sign in
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthVerify'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid code
+
+  /api/users/me:
+    get:
+      summary: Get current user
+      tags: [users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/drivers:
+    get:
+      summary: List drivers (admin/dispatcher)
+      tags: [drivers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Driver list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Driver'
+
+  /api/drivers/{id}/status:
+    patch:
+      summary: Update driver status
+      tags: [drivers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/orders:
+    post:
+      summary: Create order (client)
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_type:
+                  type: string
+                points:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderPoint'
+                payment_method:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+    get:
+      summary: List orders (user-specific)
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /api/orders/{id}:
+    get:
+      summary: Get order by id
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /api/orders/{id}/assign:
+    post:
+      summary: Assign order to driver (dispatcher/internal)
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                driver_id:
+                  type: string
+      responses:
+        '200':
+          description: Assigned
+
+  /api/orders/{id}/cancel:
+    post:
+      summary: Cancel order
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Cancelled
+
+  /api/orders/{id}/messages:
+    post:
+      summary: Send chat message related to order
+      tags: [orders, chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+      responses:
+        '201':
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /api/notifications/broadcast:
+    post:
+      summary: Broadcast notification (dispatcher/admin)
+      tags: [notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationBroadcast'
+      responses:
+        '202':
+          description: Accepted
+
+  /api/notifications:
+    get:
+      summary: List notifications for user
+      tags: [notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/reports/driver/{driverId}:
+    get:
+      summary: Driver report (from/to)
+      tags: [reports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: driverId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+
+  /api/dispatcher/orders:
+    post:
+      summary: Create order manually by dispatcher
+      tags: [dispatcher]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client_phone:
+                  type: string
+                service_type:
+                  type: string
+                points:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderPoint'
+      responses:
+        '201':
+          description: Created
+
+  /api/tariffs:
+    get:
+      summary: List tariffs
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tariffs
+
+  /api/admin/settings:
+    get:
+      summary: Get application settings (admin)
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'
+
+    patch:
+      summary: Update application settings (admin)
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                show_phone_numbers:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                contact_number:
+                  type: string
+                logo_url:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'
+
+  /api/admin/commission:
+    get:
+      summary: List commission rules
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Commission rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+    post:
+      summary: Create commission rule
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommissionRule'
+      responses:
+        '201':
+          description: Created
+
+  /api/admin/commission/{id}:
+    patch:
+      summary: Update commission rule
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommissionRule'
+      responses:
+        '200':
+          description: Updated
+
+    delete:
+      summary: Delete commission rule
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+
+  /api/admin/blocks:
+    post:
+      summary: Create manual block for a user
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                reason:
+                  type: string
+                blocked_until:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Created
+
+  /api/admin/blocks/{id}:
+    delete:
+      summary: Remove block (unblock)
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Removed
+
+  /api/admin/penalties:
+    post:
+      summary: Create penalty (fine) for a user
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                order_id:
+                  type: string
+                amount_cents:
+                  type: integer
+                reason:
+                  type: string
+      responses:
+        '201':
+          description: Created
+
+  /api/admin/audit:
+    get:
+      summary: Get audit logs
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+
+    /api/admin/transactions:
+      post:
+        summary: Create transaction (ledger)
+        tags: [admin]
+        security:
+          - bearerAuth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        responses:
+          '201':
+            description: Created
+
+    /api/admin/transactions/user/{userId}:
+      get:
+        summary: Transactions for user
+        tags: [admin]
+        security:
+          - bearerAuth: []
+        parameters:
+          - in: path
+            name: userId
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: List
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Transaction'
+
+    /api/orders/{id}/events:
+      post:
+        summary: Create order event
+        tags: [orders]
+        security:
+          - bearerAuth: []
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema:
+              type: string
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: string
+                  actor_user_id:
+                    type: string
+                  payload:
+                    type: object
+        responses:
+          '201':
+            description: Created
+
+      get:
+        summary: List order events
+        tags: [orders]
+        security:
+          - bearerAuth: []
+        parameters:
+          - in: path
+            name: id
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: List
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderEvent'
+
+  components:
+    schemas:
+      Transaction:
+        type: object
+        properties:
+          id:
+            type: string
+          user_id:
+            type: string
+          type:
+            type: string
+          amount_cents:
+            type: integer
+          created_at:
+            type: string
+            format: date-time
+      OrderEvent:
+        type: object
+        properties:
+          id:
+            type: string
+          order_id:
+            type: string
+          event:
+            type: string
+          actor_user_id:
+            type: string
+          payload:
+            type: object
+          created_at:
+            type: string
+            format: date-time
+
+
+components:
+  schemas:
+    CommissionRule:
+      type: object
+      properties:
+        id:
+          type: string
+        scope:
+          type: string
+        service_type:
+          type: string
+        driver_id:
+          type: string
+        percent:
+          type: number
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        actor_user_id:
+          type: string
+        action:
+          type: string
+        target_table:
+          type: string
+        target_id:
+          type: string
+        payload:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    post:
+      summary: Create tariff
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+

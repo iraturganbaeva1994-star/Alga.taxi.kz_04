@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "request_code_success": "Код отправлен",
+    "verify_success": "Успешная проверка"
+  }
+
+  ,"settings":{
+    "show_phone_numbers_enabled":"Показывать номера клиентов и водителей",
+    "show_phone_numbers_disabled":"Скрывать номера — использовать только чат/звонок внутри приложения",
+    "update_success":"Настройки успешно обновлены"
+  }
+}

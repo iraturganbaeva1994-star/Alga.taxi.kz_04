@@ -1,0 +1,9 @@
+{
+  "name": "alga-taxi-monorepo",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "mobile"
+  ]
+}

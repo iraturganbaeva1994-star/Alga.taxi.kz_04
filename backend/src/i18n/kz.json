@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "request_code_success": "Код жіберілді",
+    "verify_success": "Тексеру сәтті аяқталды"
+  }
+
+  ,"settings":{
+    "show_phone_numbers_enabled":"Клиенттер мен жүргізушілердің нөмірлерін көрсету",
+    "show_phone_numbers_disabled":"Нөмірлерді жасыру — тек чат/қоңырауды қолдану",
+    "update_success":"Баптаулар сәтті жаңартылды"
+  }
+}
