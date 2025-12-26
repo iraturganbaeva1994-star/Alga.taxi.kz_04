@@ -27,9 +27,30 @@ export class AuthService {
 
   async verifyCode(phone: string, code: string) {
     // TODO: verify code (match with stored code)
-    const payload = { phone, role: 'client' };
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-    return { accessToken, refreshToken, user: { phone } };
+    const role = 'client';
+    const payload = { phone, role };
+    const subject = phone;
+    const accessToken = this.jwtService.sign(payload, { subject, expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
+    const refreshToken = this.jwtService.sign(payload, { subject, expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' });
+    return { accessToken, refreshToken, user: { phone, role } };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const role = payload.role || 'client';
+      const phone = payload.phone;
+      const subject = phone;
+      const newAccess = this.jwtService.sign({ phone, role }, { subject, expiresIn: process.env.JWT_EXPIRES_IN || '1h' });
+      const newRefresh = this.jwtService.sign({ phone, role }, { subject, expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' });
+      return { accessToken: newAccess, refreshToken: newRefresh };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  async logout(_refreshToken: string) {
+    // For scaffold: we don't persist token blacklist. Client should discard tokens.
+    return { ok: true };
   }
 }

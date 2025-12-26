@@ -226,6 +226,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
+  /api/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+
+  /api/auth/logout:
+    post:
+      summary: Logout (invalidate refresh token client-side)
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/admin/hello:
+    get:
+      summary: Admin hello (example protected endpoint)
+      tags: [admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Hello admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+
   /api/drivers:
     get:
       summary: List drivers (admin/dispatcher)

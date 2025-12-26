@@ -1,21 +1,13 @@
-import { Controller, Get, Headers, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { User } from '../shared/user.decorator';
 
 @Controller('users')
 export class UsersController {
-  constructor(private jwtService: JwtService) {}
-
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Headers('authorization') auth?: string) {
-    if (!auth) throw new UnauthorizedException();
-    const parts = auth.split(' ');
-    if (parts.length !== 2) throw new UnauthorizedException();
-    const token = parts[1];
-    try {
-      const payload = this.jwtService.verify(token);
-      return { id: payload.sub || payload.userId || null, phone: payload.phone, role: payload.role || 'client', lang_pref: payload.lang_pref || 'ru' };
-    } catch (err) {
-      throw new UnauthorizedException();
-    }
+  async me(@User() user: any) {
+    if (!user) return null;
+    return { id: user.id, phone: user.phone, role: user.role || 'client', lang_pref: user.lang_pref || 'ru' };
   }
 }

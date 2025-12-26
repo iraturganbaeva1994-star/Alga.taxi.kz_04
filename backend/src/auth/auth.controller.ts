@@ -14,4 +14,16 @@ export class AuthController {
   async verify(@Body() body: { phone: string; code: string }) {
     return this.authService.verifyCode(body.phone, body.code);
   }
+
+  @Post('refresh')
+  async refresh(@Body() body: { refreshToken: string }) {
+    const tokens = await this.authService.refreshTokens(body.refreshToken);
+    if (!tokens) return { error: 'invalid_refresh' };
+    return tokens;
+  }
+
+  @Post('logout')
+  async logout(@Body() body: { refreshToken: string }) {
+    return this.authService.logout(body.refreshToken);
+  }
 }

@@ -22,6 +22,7 @@ import { AuditService } from './audit/audit.service';
 import { AuditController } from './audit/audit.controller';
 import { I18nModule } from 'nestjs-i18n';
 import * as path from 'path';
+import { AdminController } from './admin/admin.controller';
 
 @Module({
   imports: [
@@ -42,7 +43,7 @@ import * as path from 'path';
     TypeOrmModule.forFeature([AppSetting, CommissionRule, DriverBalance, UserBlock, Penalty, AuditLog, Transaction, OrderEvent, DriverActivity, NotificationLog]),
     AuthModule
   ],
-  controllers: [AppSettingsController, CommissionController, BlocksController, PenaltyController, AuditController, TransactionController, OrderEventController, UsersController],
+  controllers: [AppSettingsController, CommissionController, BlocksController, PenaltyController, AuditController, TransactionController, OrderEventController, UsersController, AdminController],
   providers: [AppSettingsService, RolesGuard, CommissionService, BlocksService, PenaltyService, AuditService, TransactionService, OrderEventService]
 })
 export class AppModule {}
