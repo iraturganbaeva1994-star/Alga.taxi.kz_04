@@ -18,7 +18,7 @@ export class BlocksService {
 
   async create(blockData: Partial<UserBlock>, actorId?: string) {
     const ent = this.repo.create(blockData as any);
-    const saved = await this.repo.save(ent);
+    const saved = await this.repo.save(ent) as any;
     await this.audit.log(actorId, 'user_block_create', 'user_blocks', saved.id, saved);
     return saved;
   }
@@ -27,7 +27,7 @@ export class BlocksService {
     const b = await this.repo.findOneBy({ id });
     if (!b) return null;
     b.active = false;
-    const saved = await this.repo.save(b);
+    const saved = await this.repo.save(b) as any;
     await this.audit.log(actorId, 'user_block_remove', 'user_blocks', b.id, saved);
     return saved;
   }

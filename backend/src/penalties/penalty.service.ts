@@ -18,7 +18,7 @@ export class PenaltyService {
 
   async create(pen: Partial<Penalty>, actorId?: string) {
     const ent = this.repo.create(pen as any);
-    const saved = await this.repo.save(ent);
+    const saved = await this.repo.save(ent) as any;
     // Apply to driver balance if applicable
     if (pen.user_id && pen.amount_cents) {
       const bal = await this.balanceRepo.findOneBy({ driver_id: pen.user_id });

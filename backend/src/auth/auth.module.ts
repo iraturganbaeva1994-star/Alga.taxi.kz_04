@@ -2,17 +2,25 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { NotificationLog } from '../notifications/notification-log.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 
+const authImports: any[] = [
+  PassportModule.register({ defaultStrategy: 'jwt' }),
+  JwtModule.register({
+    secret: process.env.JWT_SECRET || 'changeme',
+    signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+  })
+];
+
+if (process.env.SKIP_DB !== 'true') {
+  authImports.splice(1, 0, TypeOrmModule.forFeature([NotificationLog]));
+}
+
 @Module({
-  imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'changeme',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
-    })
-  ],
+  imports: authImports,
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController]
 })
