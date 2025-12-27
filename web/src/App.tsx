@@ -2,6 +2,7 @@ import React, {useState} from 'react'
 import { useTranslation } from 'react-i18next'
 import Transactions from './pages/Transactions'
 import PhoneVisibility from './pages/PhoneVisibility'
+import Reports from './pages/Reports'
 
 export default function App(){
   const { t } = useTranslation()
@@ -14,11 +15,13 @@ export default function App(){
         <button onClick={()=>setPage('transactions')}>Transactions</button>
         <button onClick={()=>setPage('settings')}>Settings</button>
         <button onClick={()=>setPage('phone-visibility')}>Phone Visibility</button>
+        <button onClick={()=>setPage('reports')}>Reports</button>
       </nav>
       {page === 'home' && <p>{t('app.welcome', 'Welcome to dispatcher panel (scaffold)')}</p>}
       {page === 'transactions' && <Transactions/>}
       {page === 'settings' && <Settings/>}
       {page === 'phone-visibility' && <PhoneVisibility/>}
+      {page === 'reports' && <Reports/>}
     </div>
   )
 }

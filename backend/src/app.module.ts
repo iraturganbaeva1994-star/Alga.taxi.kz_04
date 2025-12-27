@@ -22,6 +22,7 @@ import { AuditController } from './audit/audit.controller';
 import { I18nModule } from 'nestjs-i18n';
 import * as path from 'path';
 import { AdminController } from './admin/admin.controller';
+import { ReportsModule } from './reports/reports.module';
 
 const useLightweight = process.env.SKIP_DB === 'true';
 
@@ -50,6 +51,7 @@ if (!useLightweight) {
     }),
     TypeOrmModule.forFeature([AppSetting, CommissionRule, DriverBalance, UserBlock, Penalty, AuditLog])
   );
+    importsArr.push(ReportsModule);
   controllersArr.push(AppSettingsController, CommissionController, BlocksController, PenaltyController, AuditController, UsersController, AdminController);
   providersArr.push(AppSettingsService, RolesGuard, CommissionService, BlocksService, PenaltyService, AuditService);
 } else {
